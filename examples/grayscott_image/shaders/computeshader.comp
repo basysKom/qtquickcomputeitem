@@ -1,0 +1,118 @@
+// Gray-Scott reaction diffusion system
+// Algorithm by
+// https://github.com/neozhaoliang/pywonderland/blob/master/src/shader-playground/glsl/grayscott/compute.frag
+
+#version 440
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+// palette
+const vec4 stepColor1 = vec4(1.0, 1.0, 1.0, 0.1);
+const vec4 stepColor2 = vec4(0.0, 0.0, 0.2, 0.25);
+const vec4 stepColor3 = vec4(0.0, 0.2, 0.4, 0.35);
+const vec4 stepColor4 = vec4(0.0, 0.4, 0.6, 0.45);
+const vec4 stepColor5 = vec4(0.0, 0.6, 0.8, 0.7);
+const vec4 stepColor6 = vec4(0.0, 0.8, 1.0, 0.8);
+const vec4 stepColor7 = vec4(0.0, 1.0, 1.0, 1.0);
+
+layout (binding = 0, rgba8) uniform image2D imageBufferA;
+layout (binding = 1, rgba8) uniform image2D imageBufferB;
+layout (binding = 2, rgba8) uniform image2D imageResult;
+
+#define txUV(imageBuffer, point) imageLoad(imageBuffer, point).rg
+
+layout(std140, binding = 3) uniform UniformBuffer
+{
+    float du;
+    float dv;
+    float feed;
+    float kill;
+    int   usePalette;
+    uint timestep;
+
+    float mouseX;
+    float mouseY;
+} ubuf;
+
+vec3 valueToPaletteColor(float value) {
+    vec3 color;
+    float a;
+    if (value <= stepColor1.w) {
+        color = stepColor1.rgb;
+    } else if (value > stepColor1.w && value <= stepColor2.w) {
+        a = (value - stepColor1.w) / (stepColor2.w - stepColor1.w);
+        color = mix(stepColor1.rgb, stepColor2.rgb, a);
+    } else if (value > stepColor2.w && value <= stepColor3.w) {
+        a = (value - stepColor2.w) / (stepColor3.w - stepColor2.w);
+        color = mix(stepColor2.rgb, stepColor3.rgb, a);
+    } else if (value > stepColor3.w && value <= stepColor4.w) {
+        a = (value - stepColor3.w) / (stepColor4.w - stepColor3.w);
+        color = mix(stepColor3.rgb, stepColor4.rgb, a);
+    } else if (value > stepColor4.w && value <= stepColor5.w) {
+        a = (value - stepColor4.w) / (stepColor5.w - stepColor4.w);
+        color = mix(stepColor4.rgb, stepColor5.rgb, a);
+    } else if (value > stepColor5.w && value <= stepColor6.w) {
+        a = (value - stepColor5.w) / (stepColor6.w - stepColor5.w);
+        color = mix(stepColor5.rgb, stepColor6.rgb, a);
+    } else if (value > stepColor7.w && value <= stepColor7.w) {
+        a = (value - stepColor6.w) / (stepColor7.w - stepColor6.w);
+        color = mix(stepColor6.rgb, stepColor7.rgb, a);
+    }
+    return color;
+}
+
+void main()
+{
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+
+    vec2 center;
+    vec2 right;
+    vec2 top;
+    vec2 left;
+    vec2 bottom;
+
+    if (ubuf.timestep % 2 == 0) {
+        center   =    txUV(imageBufferA, pos + ivec2( 0,  0) );
+        right    =    txUV(imageBufferA, pos + ivec2( 1,  0) );
+        top      =    txUV(imageBufferA, pos + ivec2( 0,  1) );
+        left     =    txUV(imageBufferA, pos + ivec2(-1,  0) );
+        bottom   =    txUV(imageBufferA, pos + ivec2( 0, -1) );
+    } else {
+        center   =    txUV(imageBufferB, pos + ivec2( 0,  0) );
+        right    =    txUV(imageBufferB, pos + ivec2( 1,  0) );
+        top      =    txUV(imageBufferB, pos + ivec2( 0,  1) );
+        left     =    txUV(imageBufferB, pos + ivec2(-1,  0) );
+        bottom   =    txUV(imageBufferB, pos + ivec2( 0, -1) );
+    }
+
+    // reaction diffusion model
+    vec2 lapl = right + top + left + bottom - 4.0 * center;
+    float du = ubuf.du * lapl.x - center.x * center.y * center.y + ubuf.feed * (1.0 - center.x);
+    float dv = ubuf.dv * lapl.y + center.x * center.y * center.y - (ubuf.feed + ubuf.kill) * center.y;
+    vec2 newValue = center + 0.9 * vec2(du, dv);
+
+    if (ubuf.mouseX >= -5.0 && ubuf.mouseY >= -5.0) {
+        float l = length(vec2(ubuf.mouseX, ubuf.mouseY) - pos);
+        if (l < 2.0) {
+            newValue.y = 0.9;
+        }
+    }
+
+    newValue = min(newValue, 1.0);
+
+    vec4 color;
+    if (ubuf.usePalette == 1.0) {
+        color = vec4(valueToPaletteColor(newValue.y), 1.0);
+    } else {
+        color = vec4(newValue.y, newValue.y, newValue.y, 1.0);
+    }
+
+    imageStore(imageResult, pos, color);
+
+    // update
+    if (ubuf.timestep % 2 == 0) {
+        imageStore(imageBufferB, pos, vec4(newValue.x, newValue.y, 0.0, 1.0));
+    } else {
+        imageStore(imageBufferA, pos, vec4(newValue.x, newValue.y, 0.0, 1.0));
+    }
+}

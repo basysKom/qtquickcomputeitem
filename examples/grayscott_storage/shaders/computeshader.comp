@@ -1,0 +1,132 @@
+// Gray-Scott reaction diffusion system
+// Algorithm by
+// https://github.com/neozhaoliang/pywonderland/blob/master/src/shader-playground/glsl/grayscott/compute.frag
+
+#version 440
+
+layout (local_size_x = 256) in;
+
+struct GridCell
+{
+    vec2 pos;
+    
+    float uMaterial;
+    float vMaterial;
+
+    vec4 color;
+};
+
+layout(std140, binding = 0) buffer StorageBufferA
+{
+    GridCell cell[];
+} bufA;
+
+layout(std140, binding = 1) buffer StorageBufferB
+{
+    GridCell cell[];
+} bufB;
+
+layout(std140, binding = 2) uniform UniformBuffer
+{
+    float du;
+    float dv;
+    float feed;
+    float kill;
+    uint count;
+    uint height;
+    uint timestep;
+
+    float mouseX;
+    float mouseY;
+} ubuf;
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+    if (index < ubuf.count) {
+
+        GridCell centerCell;
+        GridCell rightCell;
+        GridCell topCell;
+        GridCell leftCell;
+        GridCell bottomCell;
+
+        if (ubuf.timestep % 2 == 0) {
+            centerCell =  bufA.cell[index];
+            rightCell =   bufA.cell[index];
+            topCell =     bufA.cell[index];
+            leftCell =    bufA.cell[index];
+            bottomCell =  bufA.cell[index];
+
+            if (index < ubuf.count - 1) {
+                rightCell = bufA.cell[index + 1];
+            }
+
+            if (index > 0) {
+                leftCell = bufA.cell[index - 1];
+            }
+
+            if (index - ubuf.height >= 0) {
+                topCell = bufA.cell[index - ubuf.height];
+            }
+
+            if (index + ubuf.height < ubuf.count) {
+                bottomCell = bufA.cell[index + ubuf.height];
+            }
+        } else {
+            centerCell =  bufB.cell[index];
+            rightCell =   bufB.cell[index];
+            topCell =     bufB.cell[index];
+            leftCell =    bufB.cell[index];
+            bottomCell =  bufB.cell[index];
+
+            if (index < ubuf.count - 1) {
+                rightCell = bufB.cell[index + 1];
+            }
+
+            if (index > 0) {
+                leftCell = bufB.cell[index - 1];
+            }
+
+            if (index - ubuf.height >= 0) {
+                topCell = bufB.cell[index - ubuf.height];
+            }
+
+            if (index + ubuf.height < ubuf.count) {
+                bottomCell = bufB.cell[index + ubuf.height];
+            }
+        }
+
+        vec2 center = vec2(centerCell.uMaterial, centerCell.vMaterial);
+        vec2 right = vec2(rightCell.uMaterial, rightCell.vMaterial);
+        vec2 top = vec2(topCell.uMaterial, topCell.vMaterial);
+        vec2 left = vec2(leftCell.uMaterial, leftCell.vMaterial);
+        vec2 bottom = vec2(bottomCell.uMaterial, bottomCell.vMaterial);
+
+        // reaction diffusion model
+        vec2 lapl = right + top + left + bottom - 4.0 * center;
+        float du = ubuf.du * lapl.x - center.x * center.y * center.y + ubuf.feed * (1.0 - center.x);
+        float dv = ubuf.dv * lapl.y + center.x * center.y * center.y - (ubuf.feed + ubuf.kill) * center.y;
+        vec2 newValue = center + 0.6 * vec2(du, dv);
+
+        if (ubuf.mouseX >= -5.0 && ubuf.mouseY >= -5.0) {
+            float l = length(vec2(ubuf.mouseX, ubuf.mouseY) - centerCell.pos);
+            if (l < 0.01) {
+                newValue.y = 0.9;
+            }
+        }
+
+        // update
+        if (ubuf.timestep % 2 == 0) {
+            bufB.cell[index].pos = bufA.cell[index].pos;
+            bufB.cell[index].uMaterial = newValue.x;
+            bufB.cell[index].vMaterial = newValue.y;
+            bufB.cell[index].color = vec4(center.y, center.y, center.y, 1.0);
+        } else {
+            bufA.cell[index].pos = bufB.cell[index].pos;
+            bufA.cell[index].uMaterial = newValue.x;
+            bufA.cell[index].vMaterial = newValue.y;
+            bufA.cell[index].color = vec4(center.y, center.y, center.y, 1.0); 
+        }
+    }
+}
