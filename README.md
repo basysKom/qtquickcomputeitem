@@ -1,6 +1,9 @@
 # QtQuickComputeItem
 
-The idea behind the QtQuickComputeItem is to develop an Qt Quick Item that works similar to Qt Quick's ShaderItem.
+The QtQuick ComputeItem offers an easy way to integrate [Compute Shader](https://www.khronos.org/opengl/wiki/Compute_Shader)
+into QML code.
+
+The idea is to have an Item that works similar to Qt Quick's ShaderItem.
 
 # Build
 
@@ -28,4 +31,3 @@ cd examples/grayscott_image
 
 # Documentation
 
-Yes.

@@ -90,8 +90,8 @@ Window {
         id: computeItem
         computeShader: ":/shaders/computeshader.comp.qsb"
 
-        dispatchX: simulationSize.width / 16
-        dispatchY: simulationSize.height / 16
+        dispatchX: simulationSize.width / 32
+        dispatchY: simulationSize.height / 32
 
         property real du: duRate.value
         property real dv: dvRate.value

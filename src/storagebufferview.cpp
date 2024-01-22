@@ -26,6 +26,7 @@ public:
 
     void setNumberOfPoints(int nop) { m_numberOfPoints = nop; }
     void setPointSize(float ps) { m_pointSize = ps; }
+    void setStrideInByte(quint32 stride) { m_strideInByte = stride; }
 
     void setBoundingRect(const QRectF &rect) { m_boundingRect = rect; }
 
@@ -43,6 +44,7 @@ private:
 
     int m_numberOfPoints { 0 };
     float m_pointSize { 1.0 };
+    quint32 m_strideInByte { 8 * sizeof(float) };
 
     QQuickWindow *m_window { nullptr };
     QRhiBuffer *m_buffer { nullptr }; 
@@ -132,6 +134,19 @@ void StorageBufferView::setPointSize(float ps)
     }
 }
 
+void StorageBufferView::setStrideInByte(quint32 stride)
+{
+    if (stride < 8 * sizeof(float)) {
+        qWarning() << "Cannot set stride below 8 * sizeof(float)";
+        return;
+    }
+    if (stride != m_strideInByte) {
+        m_strideInByte = stride;
+        emit strideInByteChanged();
+        update();
+    }
+}
+
 QSGNode* StorageBufferView::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 {
 
@@ -156,6 +171,7 @@ QSGNode* StorageBufferView::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 
     node->setNumberOfPoints(m_numberOfPoints);
     node->setPointSize(m_pointSize);
+    node->setStrideInByte(m_strideInByte);
     node->setBoundingRect(boundingRect());
     node->setPointBuffer(buffer);
 
@@ -237,7 +253,7 @@ void PointCloudRenderNode::prepare()
 
         QRhiVertexInputLayout inputLayout;
         inputLayout.setBindings({
-            { 8 * sizeof(float) }
+            { m_strideInByte }
         });
         inputLayout.setAttributes({
             { 0, 0, QRhiVertexInputAttribute::Float2, 0 },
