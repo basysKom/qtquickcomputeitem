@@ -1,0 +1,42 @@
+// Gray-Scott reaction diffusion system
+// Algorithm by
+// https://github.com/neozhaoliang/pywonderland/blob/master/src/shader-playground/glsl/grayscott/compute.frag
+
+#version 440
+
+layout (local_size_x = 256) in;
+
+struct Particle
+{
+    vec4 pos;    
+    vec4 color;
+};
+
+layout(std140, binding = 0) buffer StorageBuffer
+{
+    Particle particle[];
+} buf;
+
+layout(std140, binding = 1) uniform UniformBuffer
+{
+    float speed;
+    uint dataCount;
+} ubuf;
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+    if (index < ubuf.dataCount) {
+
+        vec4 position = buf.particle[index].pos;
+
+        position.x += ubuf.speed;
+        if (position.x > 1.0) {
+            position.x -= 2.0;
+        }
+
+        // update
+        buf.particle[index].pos = position;
+        buf.particle[index].color = vec4(position.z, position.z, position.z, 1.0);
+    }
+}
