@@ -8,11 +8,6 @@ layout(location = 0) in vec4 vertexColor;
 
 layout(location = 0) out vec4 fragColor;
 
-layout(std140, binding = 0) uniform UBuf
-{
-    float pointSize;
-} ubuf;
-
 void main()
 {
     fragColor = vertexColor;

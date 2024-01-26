@@ -13,14 +13,16 @@
 
 int main(int argc, char **argv)
 {
-    QSurfaceFormat f;
-    f.setProfile(QSurfaceFormat::CoreProfile);
-    QSurfaceFormat::setDefaultFormat(f);
+   QSurfaceFormat f;
+   f.setProfile(QSurfaceFormat::CoreProfile);
+   f.setMajorVersion(4);
+   f.setMinorVersion(3);
+   QSurfaceFormat::setDefaultFormat(f);
 
 #if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Metal);
 #elif defined(VULKAN)
-    QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
+  // QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
 #endif
 
     QGuiApplication app(argc, argv);

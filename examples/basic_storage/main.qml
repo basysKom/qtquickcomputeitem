@@ -16,44 +16,46 @@ Window {
     color: "black"
     title: qsTr("Basic example for Computeshader Storage-Buffers")
 
-    property int dataCount: 10 * 256;
+    //property int dataCount: 10 * 256;
+
+    function initBuffer() {
+        const dataSize = 8 * computeItem.dataCount; // 8 entries per point: x pos, y pos, depth, unused, rgba color
+        const bufferSize = 4 * dataSize; // four bytes per entry
+
+        let buffer = new ArrayBuffer(bufferSize);
+        let view = new Float32Array(buffer);
+        let i = 0;
+        let coordXY = 0;
+        while(i < dataSize) {
+            view[i + 0] = Math.random() * 2.0 - 1.0; // x
+            view[i + 1] = Math.random() * 2.0 - 1.0; // y
+            view[i + 2] = Math.random(); // depth
+            view[i + 3] = 0.0; // unused
+            // we just add a black particle here, the real particle color is set in the compute shader
+            view[i + 4] = 0.0; // r
+            view[i + 5] = 0.0; // g
+            view[i + 6] = 0.0; // b
+            view[i + 7] = 1.0; // a
+
+            i += 8;
+        }
+        storageBuffer.buffer = buffer;
+    }
 
     ComputeItem {
         id: computeItem
-        computeShader: ":/shaders/computeshader.comp.qsb"
-
-        dispatchX: window.dataCount / 256
 
         property real speed: 0.005
-        property int dataCount: window.dataCount
+        property int dataCount: 10 * 256
+
+        computeShader: ":/shaders/computeshader.comp.qsb"
+        dispatchX: computeItem.dataCount / 256
 
         buffers: [
             StorageBuffer {
                 id: storageBuffer
                 
-                Component.onCompleted: {
-                    const dataSize = 8 * window.dataCount; // 8 entries per point: x pos, y pos, depth, unused, rgba color
-                    const bufferSize = 4 * dataSize; // four bytes per entry
-
-                    let buffer = new ArrayBuffer(bufferSize);
-                    let view = new Float32Array(buffer);
-                    let i = 0;
-                    let coordXY = 0;
-                    while(i < dataSize) {
-                        view[i + 0] = Math.random() * 2.0 - 1.0; // x
-                        view[i + 1] = Math.random() * 2.0 - 1.0; // y
-                        view[i + 2] = Math.random(); // depth
-                        view[i + 3] = 0.0; // unused
-                        // we just add a black particle here, the real particle color is set in the compute shader
-                        view[i + 4] = 0.0; // r
-                        view[i + 5] = 0.0; // g
-                        view[i + 6] = 0.0; // b
-                        view[i + 7] = 1.0; // a
-
-                        i += 8;
-                    }
-                    storageBuffer.buffer = buffer;
-                }
+                Component.onCompleted: initBuffer()
             }
         ]
 
@@ -67,7 +69,7 @@ Window {
         anchors.fill: parent
         computeItem: computeItem
         resultBuffer: storageBuffer
-        numberOfPoints: window.dataCount
+        numberOfPoints: computeItem.dataCount
         pointSize: 2.0
         
         Keys.onPressed: (event) => {

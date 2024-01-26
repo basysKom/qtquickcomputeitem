@@ -1,6 +1,6 @@
-// Gray-Scott reaction diffusion system
-// Algorithm by
-// https://github.com/neozhaoliang/pywonderland/blob/master/src/shader-playground/glsl/grayscott/compute.frag
+// SPDX-FileCopyrightText: 2024 basysKom GmbH
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
 #version 440
 
@@ -17,7 +17,7 @@ layout(std140, binding = 0) buffer StorageBuffer
     Particle particle[];
 } buf;
 
-layout(std140, binding = 1) uniform UniformBuffer
+layout(std140, binding = 1) uniform UBuf
 {
     float speed;
     uint dataCount;

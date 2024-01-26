@@ -32,7 +32,7 @@ qt_add_executable(${PROJECT_NAME}
 )
 
 qt6_add_shaders(${PROJECT_NAME} "qmlbasicstorage_shaders"
-    GLSL "310es,330"
+    GLSL "430"
     HLSL 50
     MSL 12
     BATCHABLE
