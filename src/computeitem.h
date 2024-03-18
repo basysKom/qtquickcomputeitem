@@ -15,7 +15,7 @@
 #include <qqml.h>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-  #include <QRhi>
+  #include <rhi/qrhi.h>
 #else
   #include <private/qrhi_p.h>
 #endif

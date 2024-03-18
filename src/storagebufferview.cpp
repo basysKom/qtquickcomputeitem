@@ -305,9 +305,14 @@ void PointCloudRenderNode::render(const RenderState *state)
 
     QRhiCommandBuffer *commandBuffer = swapChain->currentFrameCommandBuffer();
     const auto outputPixelSize = swapChain->currentFrameRenderTarget()->pixelSize();
-
+ 
+    qreal dpr = 1.0;
+    const auto screen = m_window->screen();
+    if (screen) {
+      dpr = screen->devicePixelRatio();
+    }
     commandBuffer->setViewport({ 0.0f, 0.0f,
-                                 float(m_window->width()), float(m_window->height()) });
+                                 float(m_window->width() * dpr), float(m_window->height() * dpr) });
     commandBuffer->setGraphicsPipeline(m_pipeline.get());
     commandBuffer->setShaderResources();
 
