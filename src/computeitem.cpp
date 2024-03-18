@@ -410,7 +410,7 @@ void ComputeItem::init()
 {
     const QWindowList windowList = QGuiApplication::allWindows();
     for (auto w : std::as_const(windowList)) {
-        if (m_window = qobject_cast<QQuickWindow *>(w)) {
+        if ((m_window = qobject_cast<QQuickWindow *>(w))) {
             break;
         }
     }
